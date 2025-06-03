@@ -5,16 +5,34 @@ import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import csv
+import math
 
 lemmatizer = WordNetLemmatizer()
-tfidf = TfidfVectorizer()
+
+symptom_disease_map = defaultdict(set)
+disease_to_symptoms = defaultdict(set)
+symptom_to_disease_count = defaultdict(int)
+
+
+
 
 
 # 1. Load symptom-to-disease mapping
 
 with open("symptom_disease_map.json") as f:
     raw_map = json.load(f)
-    symptom_disease_map = {k: set(v) for k, v in raw_map.items()}
+    for symptom, diseases in raw_map.items():
+        for disease in diseases:
+            symptom_disease_map[symptom].add(disease)
+            disease_to_symptoms[disease].add(symptom)
+
+        symptom_to_disease_count[symptom] = len(diseases)
+
+    total_diseases = len(disease_to_symptoms)
+    idf_scores = {
+        symptom: math.log(total_diseases / (1 +  symptom_to_disease_count[symptom]))
+        for symptom in symptom_to_disease_count
+    }
 
 # 2. Normalization Functions
 
@@ -29,7 +47,6 @@ def lemmatize_sentence(text):
     return ' '.join(lemmatized)
 
 def parse_symptoms(text):
-    symptoms = set() # Watch this variable
     print("Raw input:", text)
     if "," in text:
         symptoms = {normalize(s) for s in text.split(',')}
@@ -39,84 +56,37 @@ def parse_symptoms(text):
         symptoms = {normalize(w) for w in words}
 
     print("Normalized symptoms: ", symptoms)
-    print("Type: ", type(symptoms))
     return list(symptoms)
-
 
 # 4. Disease Matching Functions
 
 def match_diseases(user_symptoms):
-    scores = defaultdict(int)
+    scores = defaultdict(float)
+
     for symptom in user_symptoms:
         if symptom in symptom_disease_map:
+            idf_weight = idf_scores.get(symptom, 0.0)
             for disease in symptom_disease_map[symptom]:
-                scores[disease] += 1
-    scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    scores_reduced = scores[:5]
-    score_normalization(scores_reduced)
-    return scores
+                scores[disease] += idf_weight
+
+    for disease in scores:
+        total_symptoms = len(disease_to_symptoms[disease]) or 1
+        scores[disease] /= total_symptoms
 
 
-
-# 4a. Score Normalization
-
-def score_normalization(scores_reduced):
-    # Scores_reduced is actually a tuple of type list
-    # Following this logic: normalized_score = (matching_symptoms_count) / (total_symptoms_for_disease
-
-    # Merging training and test together
-    # file_names = ['normalized_train.csv', 'normalized_test.csv']
-    #
-    # merged_data = pd.DataFrame()
-    #
-    # for filename in file_names:
-    #     df = pd.read_csv(filename)
-    #     merged_data = pd.concat([merged_data, df], ignore_index=True)
-    # merged_data.to_csv('normalized_merge.csv', index=
-
-    # The above code doesn't need to be run unless the dataset is changed
-
-    # Step by step logic:
-    # 1. Save diseases as their stand-alone list
-    diseases = [item[0] for item in scores_reduced]
-    # 2. Create a disease_to_symptoms set to save information
-    disease_to_symptoms = defaultdict(set)
-    # 3. Add the ['text'] aspect of the symptom_disease_map to the disease_to_symptoms
-    for symptom, diseases in symptom_disease_map.items():
-        for disease in diseases:
-            disease_to_symptoms[disease].add(symptom)
-
-    # 4. Collect total symptoms based on the top 5 results
-    normalized = []
-    for disease, score in scores_reduced:
-        total_symptoms = len(disease_to_symptoms[disease]) or 1 # Avoiding div by 0
-        # 5. Divide by the score that was given to the disease and multiply by 100
-        normalized_score = (score / total_symptoms) * 100
-        # 6. Append to the newly created list that acts as a tuple
-        normalized.append((disease, normalized_score))
-
-    print(normalized)
-    # This will be used in the UI as the confidence score for the progress bar.
-
-
-
-
-# 4b. TF-IDF Symptom Weighting:
-
-
-
-
+    return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
 
 # 5. Urgency Estimation
 
 def get_urgency(score):
-    if score >= 4:
+    if score >= 1.5:
         return "High"
-    elif score >= 2:
+    elif score >= 0.8:
         return "Moderate"
-    else:
+    elif score > 0:
         return "Low"
+    return "Unknown"
 
 # 6. Wrapper for Prediction
 
@@ -132,7 +102,7 @@ def predict_diseases(text, top_k = 5):
         }
 
 
-    top_condition = [{'disease': d, 'score': s} for d, s in matches[:top_k]] # Prints the top 5
+    top_condition = [{'disease': d, 'score': round(s, 4)} for d, s in matches[:top_k]]
 
     # Getting the urgency based on top score
     urgency = get_urgency(matches[0][1])
