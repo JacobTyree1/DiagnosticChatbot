@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import './flexbox.css'
+import Clock from './Clock'
 
 function Prediction() {
     const [inputText, setInputText] = useState('');
@@ -16,7 +18,8 @@ function Prediction() {
     };
 
     return (
-        <div style={{padding: 20}}>
+        <div style={{padding: 20}} className={"diagnostic-title"}>
+            <Clock />
             <h2> Diagnostic Chatbot</h2>
             <fieldset>
                 <legend>Please describe your symptoms</legend>
@@ -26,7 +29,7 @@ function Prediction() {
                           onChange={e =>setInputText(e.target.value)}
                 />
                 <br />
-                <button onClick={handleSubmit}>Submit</button>
+                <button onClick={handleSubmit} className={"submit-button"}>Submit</button>
                 {response && (
                     <pre>{JSON.stringify(response, null, 2)}</pre>
                 )}

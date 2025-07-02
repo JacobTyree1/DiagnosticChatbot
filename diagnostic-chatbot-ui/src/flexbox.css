@@ -1,0 +1,22 @@
+.diagnostic-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+.submit-button {
+    flex: 1; /* Item will grow and shrink, taking up a portion of the available space */
+    background-color: #333; /* Color Black */
+    color: #fff; /* Color White */
+    border: 1px solid;
+    padding: 0.5rem;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease-out;
+}
+.submit-button:hover,
+.submit-button:focus {
+    background-color: #fff;
+    color: #333;
+}
