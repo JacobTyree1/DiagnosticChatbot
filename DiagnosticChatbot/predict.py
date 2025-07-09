@@ -6,6 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import csv
 import math
+import requests
 
 lemmatizer = WordNetLemmatizer()
 
@@ -46,17 +47,37 @@ def lemmatize_sentence(text):
     lemmatized = [lemmatizer.lemmatize(w) for w in words]
     return ' '.join(lemmatized)
 
-def parse_symptoms(text):
-    print("Raw input:", text)
-    if "," in text:
-        symptoms = {normalize(s) for s in text.split(',')}
-    else:
-        text = lemmatize_sentence(text)
-        words = text.split()
-        symptoms = {normalize(w) for w in words}
+# def parse_symptoms(text):
+#     print("Raw input:", text)
+#     if "," in text:
+#         symptoms = {normalize(s) for s in text.split(',')}
+#     else:
+#         text = lemmatize_sentence(text)
+#         words = text.split()
+#         symptoms = {normalize(w) for w in words}
+#
+#     print("Normalized symptoms: ", symptoms)
+#     return list(symptoms)
 
-    print("Normalized symptoms: ", symptoms)
-    return list(symptoms)
+def query_ollama(prompt, model="mistral"):
+
+    response = requests.post("https://localhost:11434/api/generate",
+                             json={"model":model, "prompt":prompt, "stream": False})
+    response.raise_for_status()
+    return response.json()["response"]
+
+
+def parse_symptoms_with_ollama(text):
+    prompt = (
+        "Extract a comma-separated list of symptoms from the following sentence.\n"
+        "Respond only with a comma-separated list (no extra text):\n\n"
+        f"{text}"
+    )
+    response = query_ollama(prompt)
+    symptoms = [normalize(s.strip()) for s in response.split(",") if s.strip()]
+    print("LLM-extracted symptoms:", symptoms)
+    return symptoms
+
 
 # 4. Disease Matching Functions
 
@@ -91,7 +112,7 @@ def get_urgency(score):
 # 6. Wrapper for Prediction
 
 def predict_diseases(text, top_k = 5):
-    user_symptoms = parse_symptoms(text)
+    user_symptoms = parse_symptoms_with_ollama(text)
     matches = match_diseases(user_symptoms)
 
     if not matches:
