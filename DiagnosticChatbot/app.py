@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-# Use predict.py file
 from predict import predict_diseases
 import logging
-import requests
 
 # To install dependencies from requirements.txt:
 # pip install -r requirements.txt
@@ -11,9 +9,11 @@ import requests
 app = Flask(__name__)
 CORS(app) # Enabled for all routes
 
+# ========== Configure logging ==========
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-
+# ========== Validation ==========
 def validate_input(data):
     if not data or "text" not in data:
         return False, "Missing 'text' field in input JSON"
@@ -21,20 +21,24 @@ def validate_input(data):
         return False, "'text' field must be a non-empty string"
     return True, None
 
-def query_ollama(prompt, model="mistral"):
-    try:
-        response = requests.post("https://localhost:11434/api/generate",
-                             json={"model":model, "prompt":prompt, "stream": False})
-        response.raise_for_status()
-        return response.json()["response"]
-    except Exception as e:
-        logging.error(f"Ollama Error: {str(e)}")
-        return "Sorry, I couldn't process that message"
 
+# ========== Routes ==========
 
 @app.route("/") # Homepage route (Whatever comes after .com)
 def home(): # Homepage
     return "Smart Diagnostic Chatbot is running." # Returns something
+
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "healthy", "version": "1.0"})
+
+@app.route("/about")
+def about():
+    return jsonify({
+        "project": "Smart Diagnostic Chatbot",
+        "description": "A Flask-based API that uses traditional NLP and LLMs to match symptoms to possible diseases",
+        "author": "Jacob Tyree",
+    })
 @app.route("/predict", methods=["POST"]) # Routes the POST to the predict method
 def predict():
     data = request.get_json()
@@ -61,15 +65,20 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    data = request.get_json()
-    message = data.get("message", "").strip()
-    if not message:
-        return jsonify({"error": "Message is required"}), 400
-    logging.info(f"Chat Prompt Received: {message}")
-    reply = query_ollama(message)
-    return jsonify({"response": reply})
+# @app.route("/chat", methods=["POST"])
+# def chat():
+#     data = request.get_json()
+#     message = data.get("message", "").strip()
+#     if not message:
+#         return jsonify({"error": "Message is required"}), 400
+#     logging.info(f"Chat Prompt Received: {message}")
+#     reply = query_ollama(message)
+#     return jsonify({"response": reply})
+
+# Chat function that can be worked in later
+# Will function either in a new window, or in the same window. New window would probably be best for learning
+# Could have a separate button that allows the user to click to further chat about their symptoms.
+# This could end up using Ollama as a whole and not having Ollama pull symptoms and be limited to that.
 
 if __name__ == "__main__":
     app.run(debug=True) # Turn this off when you fully roll it out
