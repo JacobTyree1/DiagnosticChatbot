@@ -1,0 +1,18 @@
+If working on a new machine:
+
+"git clone https://github.com/JacobTyree1/DiagnosticChatbot.git"
+cd DiagnosticChatbot
+
+python -m venv venv
+source venv/Scripts/activate
+(You may have to manually go into Scripts, and run the activate script)
+
+python -m pip install -r requirements.txt
+
+Run the flask app: 
+cd DiagnosticChatbot
+python app.py
+
+run the ui 
+cd diagnostic-chatbot-ui
+npm start
