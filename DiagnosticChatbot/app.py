@@ -3,8 +3,8 @@ from flask_cors import CORS
 from predict import predict_diseases
 import logging
 
-# To install dependencies from requirements.txt:
-# pip install -r requirements.txt
+# To install dependencies from oldrequirements.txt:
+# pip install -r oldrequirements.txt
 
 app = Flask(__name__)
 CORS(app) # Enabled for all routes
