@@ -2,12 +2,16 @@ If working on a new machine:
 
 "git clone https://github.com/JacobTyree1/DiagnosticChatbot.git"
 cd DiagnosticChatbot
+(You should be in .../DiagnosticChatbot)
+To test this, type ls and check to see if you have the option to go to DiagnosticChatbot
+and diagnostic-chatbot-ui
 
 python -m venv venv
 source venv/Scripts/activate
 (You may have to manually go into Scripts, and run the activate script)
 
 python -m pip install -r requirements.txt
+Ensure that there are no anaconda packages on this.
 
 Run the flask app: 
 cd DiagnosticChatbot
